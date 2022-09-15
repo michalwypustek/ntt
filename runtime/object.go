@@ -33,14 +33,16 @@ const (
 	BOOL         ObjectType = "boolean"
 	STRING       ObjectType = "string"
 	BITSTRING    ObjectType = "bitstring"
-	FUNCTION     ObjectType = "function"
-	LIST         ObjectType = "list"
-	RECORD       ObjectType = "record"
-	MAP          ObjectType = "map"
-	BUILTIN_OBJ  ObjectType = "builtin function"
-	VERDICT      ObjectType = "verdict"
-	ANY          ObjectType = "?"
-	ANY_OR_NONE  ObjectType = "*"
+	//const charstring c_name := "Justus"
+	CHARSTRING  ObjectType = "charstring"
+	FUNCTION    ObjectType = "function"
+	LIST        ObjectType = "list"
+	RECORD      ObjectType = "record"
+	MAP         ObjectType = "map"
+	BUILTIN_OBJ ObjectType = "builtin function"
+	VERDICT     ObjectType = "verdict"
+	ANY         ObjectType = "?"
+	ANY_OR_NONE ObjectType = "*"
 )
 
 type Unit int
@@ -219,6 +221,32 @@ func (s *String) Get(index int) Object {
 
 func NewString(s string) *String {
 	return &String{Value: []rune(s)}
+}
+
+type Charstring struct {
+	Value string
+}
+
+func (b *Charstring) Type() ObjectType { return CHARSTRING }
+func (b *Charstring) Inspect() string {
+	return fmt.Sprint(b.Value)
+}
+
+func (b *Charstring) Equal(obj Object) bool {
+	if other, ok := obj.(*Charstring); ok {
+		return b.Value == other.Value
+	}
+	return false
+}
+
+func (b *Charstring) hashKey() hashKey {
+	h := fnv.New64a()
+	h.Write([]byte(b.Value))
+	return hashKey{Type: b.Type(), Value: h.Sum64()}
+}
+
+func NewCharstring(s string) *Charstring {
+	return &Charstring{Value: s}
 }
 
 type Bitstring struct {
