@@ -126,17 +126,17 @@ func Enum2Int(args ...runtime.Object) runtime.Object {
 		return runtime.Errorf("Argument must be an enum value")
 	}
 
-	ranges, err := e.ReturnIdByValue()
-	if err != nil {
-		return runtime.Errorf("Can't find ID of provided value")
-	}
-	smallestId := 0
-	for i, enumRange := range ranges {
-		if enumRange.First < smallestId || i == 0 {
-			smallestId = enumRange.First
-		}
-	}
-	return runtime.NewInt(smallestId)
+	// ranges, err := e.ReturnIdByValue()
+	// if err != nil {
+	// 	return runtime.Errorf("Can't find ID of provided value")
+	// }
+	// smallestId := 0
+	// for i, enumRange := range ranges {
+	// 	if enumRange.First < smallestId || i == 0 {
+	// 		smallestId = enumRange.First
+	// 	}
+	// }
+	return runtime.NewInt(e.GetValue())
 }
 
 func Log(args ...runtime.Object) runtime.Object {

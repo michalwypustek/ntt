@@ -57,13 +57,32 @@ func eval(n ast.Node, env runtime.Scope) runtime.Object {
 		return result
 
 	case *ast.Declarator:
+		//to ma type ktory sprawdzimy czy ast nie jest przypadkiem enumem
+		//jesli e1 jest w enviroment(env 69) i jesli jest enumem to wywołaj moją nową funkcję
+		//i z enumem ma zrobić env set
+		fmt.Println("n ", n.Type)
+		fmt.Println("env ", env)
+
 		var val runtime.Object = runtime.Undefined
+
+		enum, ok := env.Get(fmt.Sprint(n.Type))
+		if ok {
+			fmt.Println("znalazłem")
+			fmt.Println(enum)
+			//env.Set(fmt.Sprint(enum), val)
+			evalEnumTypeDecl2(n, env)
+		}
+
+		fmt.Println(n.Name)
+		fmt.Println(val)
+
 		if n.Value != nil {
 			val = eval(n.Value, env)
 			if runtime.IsError(val) {
 				return val
 			}
 		}
+
 		env.Set(n.Name.String(), val)
 		return nil
 
@@ -82,6 +101,7 @@ func eval(n ast.Node, env runtime.Scope) runtime.Object {
 		if val, ok := env.Get(name); ok {
 			return val
 		}
+		//Add function that tells maybe we have enum value eg red and check if its not related to enum
 		return runtime.Errorf("identifier not found: %s", name)
 
 	case *ast.CompositeLiteral:
@@ -664,6 +684,26 @@ func evalAssign(lhs ast.Expr, rhs ast.Expr, env runtime.Scope) runtime.Object {
 	return runtime.Errorf("identifier not found: %s", id.String())
 }
 
+//check if value is in key's range
+func dupa(obj runtime.Object, args []runtime.Object) runtime.Object {
+	o, ok := obj.(*runtime.EnumValue)
+	if !ok {
+		return runtime.Errorf("Object it's not enumValue type")
+	}
+	if len(args) != 1 {
+		return runtime.Errorf("Only one argument can be provided")
+	}
+	i := args[0].(runtime.Int)
+
+	value := int(i.Int64())
+
+	e, err2 := runtime.NewEnumValue2(o.GetEnumType(), o.GetKey(), value)
+	if err2 != nil {
+		return runtime.Errorf("%v", err2)
+	}
+	return e
+}
+
 func apply(obj runtime.Object, args []runtime.Object) runtime.Object {
 	switch fn := obj.(type) {
 	case *runtime.Function:
@@ -676,6 +716,8 @@ func apply(obj runtime.Object, args []runtime.Object) runtime.Object {
 	case *runtime.Builtin:
 		return fn.Fn(args...)
 
+	case *runtime.EnumValue:
+		return dupa(obj, args)
 	default:
 		return runtime.Errorf("not a function: %s (%s)", obj.Type(), obj.Inspect())
 	}
@@ -755,6 +797,65 @@ func evalEnumTypeDeclRange(expr ast.Expr) ([]runtime.EnumRange, error) {
 	return enumKeyRanges, nil
 }
 
+func evalEnumTypeDecl2(n *ast.Declarator, env runtime.Scope) runtime.Object {
+
+	name := ast.Name(n)
+	ret := runtime.NewEnumType(name)
+
+	validateNewEnumKeyRanges := func(ranges []runtime.EnumRange) error {
+		for eName, eRanges := range ret.Elements {
+			for _, eR := range eRanges {
+				for _, r := range ranges {
+					if eR.Contains(r.First) || eR.Contains(r.Last) {
+						return fmt.Errorf("range(%s) colides with ranges in key %s", r.ToString(), eName)
+					}
+				}
+			}
+		}
+		return nil
+	}
+
+	enumKeyId := 0
+	for _, e := range n.Enums {
+
+		eName := ast.Name(e)
+		if eName == "" {
+			return runtime.Errorf("can't add key without a name")
+		}
+		existingEnv, exists := env.Get(eName)
+		if exists {
+			return runtime.Errorf("can't add key %s, name aleady exists as %s", eName, existingEnv.Inspect())
+		}
+
+		_, hasThisKey := ret.Elements[eName]
+		if hasThisKey {
+			return runtime.Errorf("can't add key %s, key with this name aleady exists", eName)
+		}
+
+		eRanges, eErr := evalEnumTypeDeclRange(e)
+		if eErr != nil {
+			return runtime.Errorf("can't add key %s, %v", eName, eErr)
+		}
+		if len(eRanges) == 0 {
+			eRanges = []runtime.EnumRange{{First: enumKeyId, Last: enumKeyId}}
+		}
+		eRangesErr := validateNewEnumKeyRanges(eRanges)
+		if eRangesErr != nil {
+			return runtime.Errorf("can't add key %s, %v", eName, eRangesErr)
+		}
+
+		ret.Elements[eName] = eRanges
+		enumKeyId = eRanges[len(eRanges)-1].Last + 1
+	}
+
+	if len(ret.Elements) == 0 {
+		return runtime.Errorf("this enum has no elements")
+	}
+	env.Set(n.Name.String(), ret)
+
+	return nil
+}
+
 func evalEnumTypeDecl(n *ast.EnumTypeDecl, env runtime.Scope) runtime.Object {
 
 	name := ast.Name(n)
@@ -811,13 +912,13 @@ func evalEnumTypeDecl(n *ast.EnumTypeDecl, env runtime.Scope) runtime.Object {
 	}
 	env.Set(n.Name.String(), ret)
 
-	for enumKeyName := range ret.Elements {
-		enumKey, err := runtime.NewEnumValue(ret, enumKeyName)
-		if err != nil {
-			return runtime.Errorf("%v", err)
-		}
-		env.Set(enumKeyName, enumKey)
-	}
+	// for enumKeyName := range ret.Elements {
+	// 	enumKey, err := runtime.NewEnumValue(ret, enumKeyName)
+	// 	if err != nil {
+	// 		return runtime.Errorf("%v", err)
+	// 	}
+	// 	env.Set(enumKeyName, enumKey)
+	// }
 	return nil
 }
 

@@ -254,10 +254,15 @@ func NewEnumType(enumTypeName string, Enums ...string) *EnumType {
 type EnumValue struct {
 	typeRef *EnumType
 	key     string
+	value   int //optional parameter
 }
 
 func (ev *EnumValue) Type() ObjectType { return ENUM_VALUE }
-func (ev *EnumValue) Inspect() string  { return fmt.Sprintf("%s.%s", ev.typeRef.Name, ev.key) }
+func (ev *EnumValue) Inspect() string {
+	return fmt.Sprintf("%s.%s(%d)", ev.typeRef.Name, ev.key, ev.value)
+}
+func (ev *EnumValue) GetKey() string { return ev.key }
+func (ev *EnumValue) GetValue() int  { return ev.value }
 func (ev *EnumValue) Equal(obj Object) bool {
 	other, ok := obj.(*EnumValue)
 	if !ok {
@@ -291,11 +296,46 @@ func (ev *EnumValue) ReturnIdByValue() ([]EnumRange, *Error) {
 	}
 	return ranges, nil
 }
+
+func (ev *EnumValue) GetEnumType() *EnumType {
+	return ev.typeRef
+}
+
+func (ev *EnumValue) SetValue(value int) error {
+	ranges, err := ev.ReturnIdByValue()
+	if err != nil {
+		return Errorf("Can't find ID of provided value")
+	}
+	for _, enumRange := range ranges {
+		if value >= enumRange.First && value <= enumRange.Last {
+			ev.value = value
+		}
+	}
+	return Errorf("Provided value is out of range")
+}
+
 func NewEnumValue(enumType *EnumType, key string) (*EnumValue, error) {
-	if _, ok := enumType.Elements[key]; !ok {
+	keyRanges, ok := enumType.Elements[key]
+	if !ok {
 		return nil, fmt.Errorf("%s does not exist in Enum %s", key, enumType.Name)
 	}
-	return &EnumValue{typeRef: enumType, key: key}, nil
+	if len(keyRanges) != 1 {
+		return nil, fmt.Errorf("Provided key has more than one value")
+	}
+	if keyRanges[0].First != keyRanges[0].Last {
+		return nil, fmt.Errorf("Provided key has range")
+	}
+	return &EnumValue{typeRef: enumType, key: key, value: int(keyRanges[0].First)}, nil
+}
+
+func NewEnumValue2(enumType *EnumType, key string, value int) (*EnumValue, error) {
+	o, err := NewEnumValue(enumType, key)
+	if err != nil {
+		return nil, err
+	}
+
+	o.SetValue(value)
+	return o, nil
 }
 
 type String struct {

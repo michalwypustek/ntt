@@ -1,7 +1,6 @@
 package interpreter_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/nokia/ntt/internal/loc"
@@ -265,60 +264,61 @@ func TestBuiltinFunctions(t *testing.T) {
 		input    string
 		expected interface{}
 	}{
-		{`lengthof("")`, `0`},
-		{`lengthof("fnord")`, `5`},
-		{`lengthof(1)`, runtime.Errorf("integer types have no length")},
+		// {`lengthof("")`, `0`},
+		// {`lengthof("fnord")`, `5`},
+		// {`lengthof(1)`, runtime.Errorf("integer types have no length")},
 
-		{`int2bit(1, 4)`, `'0001'B`},
-		{`int2bit(4, 1)`, runtime.Errorf("4 value requires more than 1 bits")},
-		{`int2bit(4, -1)`, runtime.Errorf("length must be greater or equal than zero")},
-		{`int2bit(0, 0)`, `'0'B`},
-		{`int2bit(1, 0)`, runtime.Errorf("1 value requires more than 0 bits")},
-		{`int2bit(1, -1)`, runtime.Errorf("length must be greater or equal than zero")},
-		{`int2bit(-1, 8)`, runtime.Errorf("integer invalue is less than zero")},
-		{`int2bit(33569, 16)`, `'1000001100100001'B`},
-		{`int2bit(1, 3)`, `'001'B`},
-		{`int2bit(0, 2)`, `'00'B`},
+		// {`int2bit(1, 4)`, `'0001'B`},
+		// {`int2bit(4, 1)`, runtime.Errorf("4 value requires more than 1 bits")},
+		// {`int2bit(4, -1)`, runtime.Errorf("length must be greater or equal than zero")},
+		// {`int2bit(0, 0)`, `'0'B`},
+		// {`int2bit(1, 0)`, runtime.Errorf("1 value requires more than 0 bits")},
+		// {`int2bit(1, -1)`, runtime.Errorf("length must be greater or equal than zero")},
+		// {`int2bit(-1, 8)`, runtime.Errorf("integer invalue is less than zero")},
+		// {`int2bit(33569, 16)`, `'1000001100100001'B`},
+		// {`int2bit(1, 3)`, `'001'B`},
+		// {`int2bit(0, 2)`, `'00'B`},
 
-		{`int2str(9223372036854775808)`, `"9223372036854775808"`},
-		{`int2str(0)`, `"0"`},
-		{`int2str(-9223372036854775809)`, `"-9223372036854775809"`},
+		// {`int2str(9223372036854775808)`, `"9223372036854775808"`},
+		// {`int2str(0)`, `"0"`},
+		// {`int2str(-9223372036854775809)`, `"-9223372036854775809"`},
 
-		{`int2char(9223372036854775808)`, runtime.Errorf("Argument is out of range. Range is from 0 to 127. Int = 9223372036854775808")},
-		{`int2char(128)`, runtime.Errorf("Argument is out of range. Range is from 0 to 127. Int = 128")},
-		{`int2char(-1)`, runtime.Errorf("Argument is out of range. Range is from 0 to 127. Int = -1")},
-		{`int2char(70)`, `"F"`},
-		{`int2char(0)`, runtime.NewCharstring(fmt.Sprintf("%c", 0))},
-		{`int2char(127)`, runtime.NewCharstring(fmt.Sprintf("%c", 127))},
+		// {`int2char(9223372036854775808)`, runtime.Errorf("Argument is out of range. Range is from 0 to 127. Int = 9223372036854775808")},
+		// {`int2char(128)`, runtime.Errorf("Argument is out of range. Range is from 0 to 127. Int = 128")},
+		// {`int2char(-1)`, runtime.Errorf("Argument is out of range. Range is from 0 to 127. Int = -1")},
+		// {`int2char(70)`, `"F"`},
+		// {`int2char(0)`, runtime.NewCharstring(fmt.Sprintf("%c", 0))},
+		// {`int2char(127)`, runtime.NewCharstring(fmt.Sprintf("%c", 127))},
 
-		{`str2int("wrong")`, runtime.Errorf("invalid syntax: wrong")},
-		{`str2int("2-3")`, runtime.Errorf("invalid syntax: 2-3")},
-		{`str2int("150")`, runtime.NewInt("150")},
-		{`str2int("-150")`, runtime.NewInt("-150")},
+		// {`str2int("wrong")`, runtime.Errorf("invalid syntax: wrong")},
+		// {`str2int("2-3")`, runtime.Errorf("invalid syntax: 2-3")},
+		// {`str2int("150")`, runtime.NewInt("150")},
+		// {`str2int("-150")`, runtime.NewInt("-150")},
 
-		{`str2float("wrong")`, runtime.Errorf("invalid syntax: wrong")},
-		{`str2float("2-3")`, runtime.Errorf("invalid syntax: 2-3")},
-		{`str2float("150")`, runtime.NewFloat("150")},
-		{`str2float("-150")`, runtime.NewFloat("-150")},
+		// {`str2float("wrong")`, runtime.Errorf("invalid syntax: wrong")},
+		// {`str2float("2-3")`, runtime.Errorf("invalid syntax: 2-3")},
+		// {`str2float("150")`, runtime.NewFloat("150")},
+		// {`str2float("-150")`, runtime.NewFloat("-150")},
 
-		{`type enumerated E1 {red, green, blue}; var E1 testVar := blue; int2enum(0, testVar); testVar`, `E1.red`},
-		{`type enumerated E1{red(10), green(0), blue(1)}; var E1 testVar := blue; int2enum(10, testVar); testVar`, `E1.red`},
-		{`type enumerated E1 {red(10..20), green, blue}; var E1 testVar := blue; int2enum(11, testVar); testVar`, `E1.red`},
-		{`type enumerated E1 {red, green, blue}; var E1 testVar := blue; int2enum(9223372036854775808, testVar)`, runtime.Errorf("integer value out of range (int64)")},
-		{`type enumerated E1 {red, green, blue}; var E1 testVar := blue; int2enum(0, "wrong")`, runtime.Errorf("second argument must be an enum value")},
-		{`type enumerated E1 {red, green, blue}; var E1 testVar := blue; int2enum(4, testVar)`, runtime.Errorf("id 4 does not exist in any ranges of Enum E1")},
+		// {`type enumerated E1 {red, green, blue}; var E1 testVar := blue; int2enum(0, testVar); testVar`, `E1.red`},
+		// {`type enumerated E1{red(10), green(0), blue(1)}; var E1 testVar := blue; int2enum(10, testVar); testVar`, `E1.red`},
+		// {`type enumerated E1 {red(10..20), green, blue}; var E1 testVar := blue; int2enum(11, testVar); testVar`, `E1.red`},
+		// {`type enumerated E1 {red, green, blue}; var E1 testVar := blue; int2enum(9223372036854775808, testVar)`, runtime.Errorf("integer value out of range (int64)")},
+		// {`type enumerated E1 {red, green, blue}; var E1 testVar := blue; int2enum(0, "wrong")`, runtime.Errorf("second argument must be an enum value")},
+		// {`type enumerated E1 {red, green, blue}; var E1 testVar := blue; int2enum(4, testVar)`, runtime.Errorf("id 4 does not exist in any ranges of Enum E1")},
 
-		{`type enumerated E1 {red, green, blue}; var E1 testVar := blue; enum2int(testVar);`, `2`},
-		{`type enumerated E1 {red, green, blue}; var E1 testVar := blue; enum2int("wrong")`, runtime.Errorf("Argument must be an enum value")},
-		{`type enumerated E1 {red(10..20), green, blue}; var E1 testVar := red; enum2int(testVar);`, `10`},
+		// {`type enumerated E1 {red, green, blue}; var E1 testVar := blue; enum2int(testVar);`, `2`},
+		// {`type enumerated E1 {red, green, blue}; var E1 testVar := blue; enum2int("wrong")`, runtime.Errorf("Argument must be an enum value")},
 
-		{`int2unichar(-1)`, runtime.Errorf("Argument is out of range. Range is from 0 to 2147483647. Int = -1")},
-		{`int2unichar(2147483648)`, runtime.Errorf("Argument is out of range. Range is from 0 to 2147483647. Int = 2147483648")},
-		{`int2unichar(9786)`, runtime.NewUniversalString("☺")},
+		{`type enumerated E1 {red(10..20), green, blue}; var E1 testVar := red(15); enum2int(testVar);`, `15`},
 
-		{`unichar2int("too long")`, runtime.Errorf("argument must be of length=1")},
-		{`unichar2int("t")`, `116`},
-		{`unichar2int("☺")`, `9786`},
+		// {`int2unichar(-1)`, runtime.Errorf("Argument is out of range. Range is from 0 to 2147483647. Int = -1")},
+		// {`int2unichar(2147483648)`, runtime.Errorf("Argument is out of range. Range is from 0 to 2147483647. Int = 2147483648")},
+		// {`int2unichar(9786)`, runtime.NewUniversalString("☺")},
+
+		// {`unichar2int("too long")`, runtime.Errorf("argument must be of length=1")},
+		// {`unichar2int("t")`, `116`},
+		// {`unichar2int("☺")`, `9786`},
 	}
 	for _, tt := range tests {
 		t.Run(t.Name(), func(t *testing.T) {

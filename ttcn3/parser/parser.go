@@ -2034,7 +2034,8 @@ func (p *parser) parseValueDecl() *ast.ValueDecl {
 	if x.Kind.Kind != token.TIMER {
 		x.Type = p.parseTypeRef()
 	}
-	x.Decls = p.parseDeclList()
+	x.Decls = p.parseDeclListWithType(x.Type)
+	//valueDeclarator, stad mozemy wyciagnac E1
 	x.With = p.parseWith()
 	return x
 }
@@ -2073,9 +2074,37 @@ func (p *parser) parseDeclList() (list []*ast.Declarator) {
 	return
 }
 
+func (p *parser) parseDeclListWithType(t ast.Expr) (list []*ast.Declarator) {
+	if p.trace {
+		defer un(trace(p, "DeclList"))
+	}
+
+	list = append(list, p.parseDeclaratorWithType(t))
+	for p.tok == token.COMMA {
+		p.consumeTrivia(list[len(list)-1].LastTok())
+		list = append(list, p.parseDeclarator())
+	}
+	return
+}
 func (p *parser) parseDeclarator() *ast.Declarator {
 	x := &ast.Declarator{}
 	x.Name = p.parseName()
+	fmt.Println(x.Type)
+	if p.tok == token.LBRACK {
+		x.ArrayDef = p.parseArrayDefs()
+	}
+	if p.tok == token.ASSIGN {
+		x.AssignTok = p.consume()
+		x.Value = p.parseExpr()
+	}
+	return x
+}
+
+func (p *parser) parseDeclaratorWithType(t ast.Expr) *ast.Declarator {
+	x := &ast.Declarator{}
+	x.Name = p.parseName()
+	x.Type = t
+	fmt.Println(x.Type)
 	if p.tok == token.LBRACK {
 		x.ArrayDef = p.parseArrayDefs()
 	}

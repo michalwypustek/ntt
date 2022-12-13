@@ -832,6 +832,7 @@ type (
 		ArrayDef  []*ParenExpr
 		AssignTok Token
 		Value     Expr
+		Type      Expr
 	}
 
 	TemplateDecl struct {
