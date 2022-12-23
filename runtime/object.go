@@ -329,13 +329,18 @@ func NewEnumValue(enumType *EnumType, key string) (*EnumValue, error) {
 }
 
 func NewEnumValue2(enumType *EnumType, key string, value int) (*EnumValue, error) {
-	o, err := NewEnumValue(enumType, key)
-	if err != nil {
-		return nil, err
-	}
 
-	o.SetValue(value)
-	return o, nil
+	keyRanges, ok := enumType.Elements[key]
+	if !ok {
+		return nil, fmt.Errorf("%s does not exist in Enum %s", key, enumType.Name)
+	}
+	if len(keyRanges) != 1 {
+		return nil, fmt.Errorf("Provided key has more than one value")
+	}
+	if value < keyRanges[0].First || value > keyRanges[0].Last {
+		return nil, fmt.Errorf("Provided key value is out of range")
+	}
+	return &EnumValue{typeRef: enumType, key: key, value: int(value)}, nil
 }
 
 type String struct {
